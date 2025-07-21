@@ -1,0 +1,74 @@
+let total = 0;
+let left = 0;
+const startTime = Date.now();
+
+const ytmLog = msg => {
+    const elapsedTime = Date.now() - startTime;
+    const elapsedHours = Math.floor(elapsedTime / 3600000);
+    const elapsedMinutes = Math.floor((elapsedTime % 3600000) / 60000);
+    const elapsedSeconds = Math.floor((elapsedTime % 60000) / 1000);
+
+    let formattedTime = '';
+    if (elapsedHours > 0) {
+        formattedTime += `${elapsedHours} hour${elapsedHours > 1 ? 's' : ''}, `;
+    }
+    if (elapsedMinutes > 0 || elapsedHours > 0) {
+        formattedTime += `${elapsedMinutes} minute${elapsedMinutes > 1 ? 's' : ''}, `;
+    }
+    formattedTime += `${elapsedSeconds} second${elapsedSeconds > 1 ? 's' : ''}`;
+
+    console.log(`[YTM Liker] ${msg} (Elapsed Time: ${formattedTime})`);
+};
+
+// Auto-scroll function to load all songs
+async function scrollToBottom() {
+    ytmLog("Scrolling to load all songs...");
+    let lastHeight = document.body.scrollHeight;
+    while (true) {
+        window.scrollTo(0, document.body.scrollHeight);
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for content to load
+        let newHeight = document.body.scrollHeight;
+        if (newHeight === lastHeight) break; // Stop if no new content loaded
+        lastHeight = newHeight;
+    }
+    ytmLog("Finished scrolling.");
+}
+
+async function likeAll() {
+    // Scroll to load all songs
+    await scrollToBottom();
+
+    let els = document.getElementById("contents").querySelectorAll(
+        "button[aria-pressed='false'][aria-label='Like']"
+    );
+
+    total = els.length; 
+    left = els.length;
+    ytmLog(`Total Queue: ${total}`);
+
+    function likeNext(index) {
+        if (index < 0) {
+            ytmLog('All songs processed.');
+            return;
+        }
+
+        let el = els[index];
+        const randomInterval = Math.floor(Math.random() * (60 - 10 + 1)) + 10;
+
+        if (el.getAttribute("aria-pressed") === "false") {
+            el.click();
+            left--;
+            ytmLog(`Liked a song. ${left} songs left out of ${total}.`);
+            ytmLog(`Waiting ${randomInterval} second${randomInterval > 1 ? 's' : ''} before next action.`);
+            setTimeout(() => likeNext(index - 1), randomInterval * 1000);
+        } else {
+            left--;
+            ytmLog(`Song already liked. Skipping. ${left} songs left out of ${total}.`);
+            likeNext(index - 1);
+        }
+    }
+
+    likeNext(els.length - 1); // Start from the last song (bottom/oldest)
+}
+
+likeAll();
